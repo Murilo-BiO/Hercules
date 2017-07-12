@@ -334,6 +334,7 @@ struct item {
 	short amount;
 	unsigned int equip; // Location(s) where item is equipped (using enum equip_pos for bitmasking).
 	char identify;
+	char nostack; ///> Whether or not to stack
 	char refine;
 	char attribute;
 	short card[MAX_SLOTS];

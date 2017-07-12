@@ -17913,6 +17913,7 @@ void clif_parse_CashShopBuy(int fd, struct map_session_data *sd) {
 						memset(&item_tmp, 0, sizeof(item_tmp));
 						item_tmp.nameid = data->nameid;
 						item_tmp.identify = 1;
+						item_tmp.nostack = 1;
 
 						switch (pc->additem(sd, &item_tmp, get_count, LOG_TYPE_NPC)) {
 							case 0:

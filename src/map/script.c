@@ -7843,6 +7843,87 @@ BUILDIN(checkweight2)
 }
 
 /*==========================================
+ * cashitem <item id>,<amount>{,<account ID>};
+ * cashitem "<item name>",<amount>{,<account ID>};
+ *------------------------------------------*/
+BUILDIN(cashitem)
+{
+	int nameid, amount, get_count, i, flag = 0, offset = 0;
+	struct item it;
+	struct map_session_data *sd;
+	struct item_data *item_data;
+
+	if (script_isstringtype(st, 2)) {
+		// "<item name>"
+		const char *name = script_getstr(st, 2);
+		if ((item_data = itemdb->search_name(name)) == NULL) {
+			ShowError("buildin_%s: Nonexistant item %s requested.\n", script->getfuncname(st), name);
+			return false; //No item created.
+		}
+		nameid = item_data->nameid;
+	} else {
+		// <item id>
+		nameid = script_getnum(st, 2);
+		if (nameid < 0) {
+			//random item pick
+			nameid = -nameid;
+			flag = 1;
+		}
+		if (nameid <= 0 || !(item_data = itemdb->exists(nameid))) {
+			ShowError("buildin_%s: Nonexistant item %d requested.\n", script->getfuncname(st), nameid);
+			return false; //No item created.
+		}
+	}
+
+	// <amount>
+	if ((amount = script_getnum(st,3)) <= 0) {
+		//return if amount <= 0, skip the useles iteration
+		return true;
+	}
+
+	memset(&it, 0, sizeof(it));
+	it.nameid = nameid;
+	it.nostack = 1;
+
+	if (!flag) {
+		it.identify = 1;
+	} else {
+		it.identify = itemdb->isidentified2(item_data);
+	}
+
+	if (script_hasdata(st, 4)) {
+		// <Account ID>
+		sd = script->id2sd(st, script_getnum(st, 4));
+	} else {
+		// Attached player
+		sd = script->rid2sd(st);
+	}
+
+	if (sd == NULL) // no target
+		return true;
+
+	//Check if it's stackable.
+	if (!itemdb->isstackable(nameid))
+		get_count = 1;
+	else
+		get_count = amount;
+
+	for (i = 0; i < amount; i += get_count) {
+		// if not pet egg
+		if (!pet->create_egg(sd, nameid)) {
+			if ((flag = pc->additem(sd, &it, get_count, LOG_TYPE_SCRIPT))) {
+				clif->additem(sd, 0, 0, flag);
+				if (pc->candrop(sd, &it)) {
+					map->addflooritem(&sd->bl, &it, get_count, sd->bl.m, sd->bl.x, sd->bl.y, 0, 0, 0, 0);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+/*==========================================
  * getitem <item id>,<amount>{,<account ID>};
  * getitem "<item name>",<amount>{,<account ID>};
  *
@@ -23564,6 +23645,7 @@ void script_parse_builtin(void) {
 		BUILDIN_DEF(getarrayindex,"r"),
 		BUILDIN_DEF(deletearray,"r?"),
 		BUILDIN_DEF(getelementofarray,"ri"),
+		BUILDIN_DEF(cashitem, "vi?"),
 		BUILDIN_DEF(getitem,"vi?"),
 		BUILDIN_DEF(rentitem,"vi"),
 		BUILDIN_DEF(getitem2,"viiiiiiii?"),

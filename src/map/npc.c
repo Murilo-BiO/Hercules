@@ -1841,6 +1841,7 @@ int npc_cashshop_buy(struct map_session_data *sd, int nameid, int amount, int po
 		memset(&item_tmp, 0, sizeof(struct item));
 		item_tmp.nameid = nameid;
 		item_tmp.identify = 1;
+		item_tmp.nostack = 1;
 
 		pc->additem(sd,&item_tmp, amount, LOG_TYPE_NPC);
 	}
