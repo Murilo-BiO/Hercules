@@ -6703,7 +6703,14 @@ int pc_checkbaselevelup(struct map_session_data *sd)
 	uint64 next = pc->nextbaseexp(sd);
 
 	nullpo_ret(sd);
-	if (!next || sd->status.base_exp < next)
+	if (next == 0) {
+		if (pc->thisbaseexp(sd) > 0 && sd->status.base_exp > pc->thisbaseexp(sd)) {
+			sd->status.base_exp = pc->thisbaseexp(sd);
+		}
+		return 0;
+	}
+	
+	if (sd->status.base_exp < next)
 		return 0;
 
 	do {
@@ -6767,7 +6774,14 @@ int pc_checkjoblevelup(struct map_session_data *sd)
 	uint64 next = pc->nextjobexp(sd);
 
 	nullpo_ret(sd);
-	if(!next || sd->status.job_exp < next)
+	if (next == 0) {
+		if (pc->thisjobexp(sd) > 0 && sd->status.job_exp > pc->thisjobexp(sd)) {
+			sd->status.job_exp = pc->thisjobexp(sd);
+		}
+		return 0;
+	}
+	
+	if (sd->status.job_exp < next)
 		return 0;
 
 	do {
@@ -6862,8 +6876,8 @@ void pc_calcexp(struct map_session_data *sd, uint64 *base_exp, uint64 *job_exp, 
 	bexp += apply_percentrate64(bexp, buff_ratio, 100);
 	jexp += apply_percentrate64(jexp, buff_ratio + buff_job_ratio, 100);
 
-	*job_exp = cap_value(jexp, 1, UINT64_MAX);
-	*base_exp = cap_value(bexp, 1, UINT64_MAX);
+	*job_exp = cap_value(jexp, 0, UINT64_MAX);
+	*base_exp = cap_value(bexp, 0, UINT64_MAX);
 }
 
 /**
@@ -6887,7 +6901,7 @@ bool pc_gainexp(struct map_session_data *sd, struct block_list *src, uint64 base
 	if (pc_has_permission(sd,PC_PERM_DISABLE_EXP))
 		return false;
 
-	if (src)
+	if (src != NULL)
 		pc->calcexp(sd, &base_exp, &job_exp, src);
 
 	if (sd->status.guild_id > 0)
@@ -6941,10 +6955,14 @@ bool pc_gainexp(struct map_session_data *sd, struct block_list *src, uint64 base
 	}
 
 #if PACKETVER >= 20091027
-	if(base_exp)
+	if (base_exp) {
+		base_exp = pc->nextbaseexp(sd) > 0 ? base_exp : 0;
 		clif->displayexp(sd, base_exp, SP_BASEEXP, is_quest);
-	if(job_exp)
-		clif->displayexp(sd, job_exp,  SP_JOBEXP, is_quest);
+	}
+	if (job_exp) {
+		job_exp = pc->nextjobexp(sd) > 0 ? job_exp : 0;
+		clif->displayexp(sd, job_exp,  SP_JOBEXP, false); ///> Job Exp is always displayed yellow
+	}
 #endif
 
 	if(sd->state.showexp) {
@@ -6989,7 +7007,9 @@ uint64 pc_nextbaseexp(const struct map_session_data *sd)
 //Base exp needed for this level.
 uint64 pc_thisbaseexp(const struct map_session_data *sd)
 {
-	if (sd->status.base_level > pc->maxbaselv(sd) || sd->status.base_level <= 1)
+	if (sd->status.base_level >= pc->maxbaselv(sd))
+		return MAX_BASELV_EXP;
+	if (sd->status.base_level <= 1)
 		return 0;
 
 	return pc->exp_table[pc->class2idx(sd->status.class)][0][sd->status.base_level-2];
@@ -7015,7 +7035,9 @@ uint64 pc_nextjobexp(const struct map_session_data *sd)
 //Job exp needed for this level.
 uint64 pc_thisjobexp(const struct map_session_data *sd)
 {
-	if (sd->status.job_level > pc->maxjoblv(sd) || sd->status.job_level <= 1)
+	if (sd->status.job_level >= pc->maxjoblv(sd))
+		return MAX_JOBLV_EXP;
+	if (sd->status.job_level <= 1)
 		return 0;
 	return pc->exp_table[pc->class2idx(sd->status.class)][1][sd->status.job_level-2];
 }
@@ -7978,7 +8000,7 @@ int pc_dead(struct map_session_data *sd,struct block_list *src) {
 	}
 
 	// changed penalty options, added death by player if pk_mode [Valaris]
-	if( battle_config.death_penalty_type
+	if (battle_config.death_penalty_type
 	   && (sd->job & MAPID_UPPERMASK) != MAPID_NOVICE // only novices will receive no penalty
 	   && !map->list[sd->bl.m].flag.noexppenalty && !map_flag_gvg2(sd->bl.m)
 	   && !sd->sc.data[SC_BABY] && !sd->sc.data[SC_CASH_DEATHPENALTY]
@@ -7994,19 +8016,20 @@ int pc_dead(struct map_session_data *sd,struct block_list *src) {
 					break;
 			}
 
-			if (base_penalty != 0) {
-				if (battle_config.pk_mode && src && src->type==BL_PC)
-					base_penalty*=2;
-				if( sd->status.mod_death != 100 )
-					base_penalty = base_penalty * sd->status.mod_death / 100;
-				sd->status.base_exp -= min(sd->status.base_exp, base_penalty);
-				clif->updatestatus(sd,SP_BASEEXP);
-			}
+			if (battle_config.pk_mode && src && src->type==BL_PC)
+				base_penalty *= 2;
+			if (sd->status.mod_death != 100)
+				base_penalty = base_penalty * sd->status.mod_death / 100;
+			base_penalty = min(sd->status.base_exp, base_penalty);
+			sd->status.base_exp -= base_penalty;
+			clif->displayexp(sd, (int64)(-base_penalty), SP_BASEEXP, false);
+			clif->updatestatus(sd, SP_BASEEXP);
 		}
 
-		if(battle_config.death_penalty_job > 0) {
+		if (battle_config.death_penalty_job > 0) {
 			unsigned int job_penalty = 0;
 
+			// TODO: Check if only 3rd classes loses exp when die even on max level [BiO']
 			switch (battle_config.death_penalty_type) {
 				case 1:
 					job_penalty = (unsigned int) apply_percentrate64(pc->nextjobexp(sd), battle_config.death_penalty_job, 10000);
@@ -8016,14 +8039,14 @@ int pc_dead(struct map_session_data *sd,struct block_list *src) {
 					break;
 			}
 
-			if (job_penalty != 0) {
-				if (battle_config.pk_mode && src && src->type==BL_PC)
-					job_penalty*=2;
-				if( sd->status.mod_death != 100 )
-					job_penalty = job_penalty * sd->status.mod_death / 100;
-				sd->status.job_exp -= min(sd->status.job_exp, job_penalty);
-				clif->updatestatus(sd,SP_JOBEXP);
-			}
+			if (battle_config.pk_mode && src && src->type==BL_PC)
+				job_penalty *= 2;
+			if (sd->status.mod_death != 100)
+				job_penalty = job_penalty * sd->status.mod_death / 100;
+			job_penalty = min(sd->status.job_exp, job_penalty);
+			sd->status.job_exp -= job_penalty;
+			clif->displayexp(sd, (int64)(-job_penalty), SP_JOBEXP, false);
+			clif->updatestatus(sd, SP_JOBEXP);
 		}
 
 		if (battle_config.zeny_penalty > 0 && !map->list[sd->bl.m].flag.nozenypenalty) {

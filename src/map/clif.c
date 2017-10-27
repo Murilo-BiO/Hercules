@@ -16717,10 +16717,13 @@ void clif_party_show_picker(struct map_session_data * sd, struct item * item_dat
 /// 07f6 <account id>.L <amount>.L <var id>.W <exp type>.W
 /// var id:
 ///     SP_BASEEXP, SP_JOBEXP
+/// exp:
+///     < 0 = exp loss
+///     >= 0 = exp gain
 /// exp type:
 ///     0 = normal exp gain/loss
 ///     1 = quest exp gain/loss
-void clif_displayexp(struct map_session_data *sd, uint64 exp, char type, bool is_quest)
+void clif_displayexp(struct map_session_data *sd, int64 exp, char type, bool is_quest)
 {
 	int fd;
 
@@ -16743,7 +16746,7 @@ void clif_displayexp(struct map_session_data *sd, uint64 exp, char type, bool is
 	WFIFOW(fd, 14) = type;
 	WFIFOW(fd, 16) = is_quest ? 1 : 0; // Normal exp is shown in yellow, quest exp is shown in purple.
 #else
-	WFIFOL(fd, 6) = (uint32)exp;
+	WFIFOL(fd, 6) = (int)exp;
 	WFIFOW(fd, 10) = type;
 	WFIFOW(fd, 12) = is_quest ? 1 : 0; // Normal exp is shown in yellow, quest exp is shown in purple.
 #endif

@@ -46,6 +46,8 @@
 #define MAX_PC_FEELHATE 3
 #define MAX_PC_DEVOTION 5          ///< Max amount of devotion targets
 #define PVP_CALCRANK_INTERVAL 1000 ///< PVP calculation interval
+#define MAX_BASELV_EXP 99999999 ///< Max exp for max base level 99.999.999
+#define MAX_JOBLV_EXP 999999999 ///< Max exp for max job level 999.999.999
 
 //Equip indexes constants. (eg: sd->equip_index[EQI_AMMO] returns the index
 //where the arrows are equipped)
