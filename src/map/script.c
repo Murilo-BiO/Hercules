@@ -10591,21 +10591,33 @@ BUILDIN(makepet)
  *------------------------------------------*/
 BUILDIN(getexp)
 {
-	int base=0,job=0;
+	int base = 0, job = 0;
 	struct map_session_data *sd = script->rid2sd(st);
+	struct block_list *src;
 	if (sd == NULL)
 		return true;
 
-	base = script_getnum(st,2);
-	job = script_getnum(st,3);
-	if (base < 0 || job < 0)
-		return true;
+	base = script_getnum(st, 2);
+	job = script_getnum(st, 3);
+	if (base < 0 || job < 0) {
+		ShowError("buildin_getexp: Received negative exp. Base: %d | Job: %d\n", base, job);
+		return false;
+	}
 
-	// bonus for npc-given exp
-	base = cap_value(apply_percentrate(base, battle_config.quest_exp_rate, 100), 0, INT_MAX);
-	job = cap_value(apply_percentrate(job, battle_config.quest_exp_rate, 100), 0, INT_MAX);
+	// Fixed exp (not affected by i.e. Battle Manual, used by i.e. Miracle_Medicine)
+	// So we need to pass src as null to pc_gainexp and the modifiers will be ignored
+	if (script_hasdata(st, 4) && script_getnum(st, 4) == 1) {
+		src = NULL;
+	} else {
+		src = &sd->bl;
 
-	pc->gainexp(sd, &sd->bl, base, job, true);
+		// bonus for npc-given exp
+		base = cap_value(apply_percentrate(base, battle_config.quest_exp_rate, 100), 0, INT_MAX);
+		job = cap_value(apply_percentrate(job, battle_config.quest_exp_rate, 100), 0, INT_MAX);
+	}
+	
+
+	pc->gainexp(sd, src, base, job, true);
 
 	return true;
 }
@@ -24118,7 +24130,7 @@ void script_parse_builtin(void) {
 		BUILDIN_DEF(getitemname,"v"),
 		BUILDIN_DEF(getitemslots,"i"),
 		BUILDIN_DEF(makepet,"i"),
-		BUILDIN_DEF(getexp,"ii"),
+		BUILDIN_DEF(getexp,"ii?"),
 		BUILDIN_DEF(getinventorylist,""),
 		BUILDIN_DEF(getcartinventorylist,""),
 		BUILDIN_DEF(getskilllist,""),

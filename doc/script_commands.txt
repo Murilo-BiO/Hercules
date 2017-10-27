@@ -4737,11 +4737,13 @@ Requires client 2014-10-22 or greater.
 
 ---------------------------------------
 
-*getexp(<base xp>, <job xp>)
+*getexp(<base xp>, <job xp>{, <fixed>})
 
 This command will give the invoking character a specified number of base
 and job experience points. Should be used as a quest reward. Negative values
-won't work.
+won't work. If the third parameter is set to true it will ignore all exp modifiers
+but will be shown as quest exp (purple for base and yellow for job). The default value
+for the optional third paramater is false.
 Is subject to EXP bonuses and to the `quest_exp_rate` config option.
 
 	getexp(10000, 5000);
