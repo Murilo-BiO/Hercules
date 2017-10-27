@@ -10602,10 +10602,10 @@ void HP_clif_equpcheckbox(struct map_session_data *sd) {
 	}
 	return;
 }
-void HP_clif_displayexp(struct map_session_data *sd, uint64 exp, char type, bool is_quest) {
+void HP_clif_displayexp(struct map_session_data *sd, int64 exp, char type, bool is_quest) {
 	int hIndex = 0;
 	if (HPMHooks.count.HP_clif_displayexp_pre > 0) {
-		void (*preHookFunc) (struct map_session_data **sd, uint64 *exp, char *type, bool *is_quest);
+		void (*preHookFunc) (struct map_session_data **sd, int64 *exp, char *type, bool *is_quest);
 		*HPMforce_return = false;
 		for (hIndex = 0; hIndex < HPMHooks.count.HP_clif_displayexp_pre; hIndex++) {
 			preHookFunc = HPMHooks.list.HP_clif_displayexp_pre[hIndex].func;
@@ -10620,7 +10620,7 @@ void HP_clif_displayexp(struct map_session_data *sd, uint64 exp, char type, bool
 		HPMHooks.source.clif.displayexp(sd, exp, type, is_quest);
 	}
 	if (HPMHooks.count.HP_clif_displayexp_post > 0) {
-		void (*postHookFunc) (struct map_session_data *sd, uint64 exp, char type, bool is_quest);
+		void (*postHookFunc) (struct map_session_data *sd, int64 exp, char type, bool is_quest);
 		for (hIndex = 0; hIndex < HPMHooks.count.HP_clif_displayexp_post; hIndex++) {
 			postHookFunc = HPMHooks.list.HP_clif_displayexp_post[hIndex].func;
 			postHookFunc(sd, exp, type, is_quest);

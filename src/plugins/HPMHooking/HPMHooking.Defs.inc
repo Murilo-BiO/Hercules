@@ -1180,8 +1180,8 @@ typedef void (*HPMHOOK_pre_clif_viewequip_ack) (struct map_session_data **sd, st
 typedef void (*HPMHOOK_post_clif_viewequip_ack) (struct map_session_data *sd, struct map_session_data *tsd);
 typedef void (*HPMHOOK_pre_clif_equpcheckbox) (struct map_session_data **sd);
 typedef void (*HPMHOOK_post_clif_equpcheckbox) (struct map_session_data *sd);
-typedef void (*HPMHOOK_pre_clif_displayexp) (struct map_session_data **sd, uint64 *exp, char *type, bool *is_quest);
-typedef void (*HPMHOOK_post_clif_displayexp) (struct map_session_data *sd, uint64 exp, char type, bool is_quest);
+typedef void (*HPMHOOK_pre_clif_displayexp) (struct map_session_data **sd, int64 *exp, char *type, bool *is_quest);
+typedef void (*HPMHOOK_post_clif_displayexp) (struct map_session_data *sd, int64 exp, char type, bool is_quest);
 typedef void (*HPMHOOK_pre_clif_font) (struct map_session_data **sd);
 typedef void (*HPMHOOK_post_clif_font) (struct map_session_data *sd);
 typedef void (*HPMHOOK_pre_clif_progressbar) (struct map_session_data **sd, unsigned int *color, unsigned int *second);
